@@ -142,22 +142,30 @@
     let touchStartX = 0;
     let touchEndX = 0;
 
-    document.addEventListener('touchstart', e => {
-        touchStartX = e.changedTouches[0].screenX;
-        touchStartTime = Date.now();
-    });
+        let tapCount = 0;
+        let lastTapTime = 0;
 
-    document.addEventListener('touchend', e => {
-        touchEndX = e.changedTouches[0].screenX;
-        const touchDuration = Date.now() - touchStartTime;
+        document.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartTime = Date.now();
 
-        if (touchDuration >= 10000) {
-            window.location.reload();
-            return;
-        }
+            const currentTime = Date.now();
+            const tapGap = currentTime - lastTapTime;
 
-        handleGesture();
-    });
+            if (tapGap < 300) {
+                tapCount++;
+            } else {
+                tapCount = 1;
+            }
+
+            lastTapTime = currentTime;
+
+            if (tapCount === 3) {
+                window.location.reload();
+                tapCount = 0;
+                return;
+            }
+        });
 
     const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 // ... existing code below ...
