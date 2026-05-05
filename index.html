@@ -114,17 +114,18 @@
     const grid = document.getElementById('week-grid');
     let viewDate = new Date();
 
-    // Swipe functionality
     let currentDirection = null;
+    let touchStartX = 0;
+    let touchEndX = 0;
 
     function handleGesture() {
-        if (touchendX < touchstartX - 50) {
+        if (touchEndX< touchStartX - 50) {
             // Swipe left -> Next week
             viewDate.setDate(viewDate.getDate() + 7);
             currentDirection = 'left';
             render();
         }
-        if (touchendX > touchstartX + 50) {
+        if (touchEndX > touchStartX + 50) {
             // Swipe right -> Previous week
             viewDate.setDate(viewDate.getDate() - 7);
             currentDirection = 'right';
@@ -133,26 +134,15 @@
     }
 
 // ... existing code above ...
-    document.addEventListener('touchend', e => {
-        touchendX = e.changedTouches[0].screenX;
-        handleGesture();
-    });
+    let tapCount = 0;
+    let lastTapTime = 0;
 
-    let touchStartTime = 0;
-    let touchStartX = 0;
-    let touchEndX = 0;
+    document.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+        const currentTime = Date.now();
+        const tapGap = currentTime - lastTapTime;
 
-        let tapCount = 0;
-        let lastTapTime = 0;
-
-        document.addEventListener('touchstart', e => {
-            touchStartX = e.changedTouches[0].screenX;
-            touchStartTime = Date.now();
-
-            const currentTime = Date.now();
-            const tapGap = currentTime - lastTapTime;
-
-            if (tapGap < 300) {
+        if (tapGap< 300) {
                 tapCount++;
             } else {
                 tapCount = 1;
@@ -166,6 +156,14 @@
                 return;
             }
         });
+
+    document.addEventListener('touchend', e => {
+        touchEndX = e.changedTouches[0].screenX;
+        // Only trigger swipe if the finger actually moved (skip taps)
+        if (Math.abs(touchEndX - touchStartX) > 50) {
+            handleGesture();
+        }
+    });
 
     const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 // ... existing code below ...
