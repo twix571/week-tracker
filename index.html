@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<title>Week Tracker</title>
+<style>
+    body {
+        font-family: system-ui, -apple-system, sans-serif;
+        margin: 0;
+        padding: 12px;
+        background: #121212;
+        color: #e0e0e0;
+        line-height: 1.4;
+    }
+    header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #333;
+    }
+    button {
+        padding: 12px 24px;
+        background: #121212;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 18px;
+        touch-action: manipulation;
+    }
+    button:active { background: #444; }
+    h2 { margin: 0; font-size: 18px; font-weight: 500; }
+    .day {
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+    }
+    .day.collapsed textarea {
+        display: none;
+    }
+    .header {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: #888;
+        cursor: pointer;
+    }
+    .today .header { color: #0a84ff; }
+    textarea {
+        width: 100%;
+        box-sizing: border-box;
+        background: #121212;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 12px;
+        min-height: 80px;
+        font-family: inherit;
+        font-size: 16px;
+        resize: vertical;
+        -webkit-appearance: none;
+    }
+    textarea:focus {
+        outline: none;
+    }
+    header button {
+        display: none;
+    }
+</style>
+</head>
+<body>
+
+<header>
+    <button id="prev">&larr;</button>
+    <h2 id="month-label"></h2>
+    <button id="next">&rarr;</button>
+</header>
+
+<main id="week-grid"></main>
+
+<script>
+    const grid = document.getElementById('week-grid');
+    const label = document.getElementById('month-label');
+    let viewDate = new Date();
+    
+    const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+    function render() {
+        grid.innerHTML = '';
+        const realToday = new Date().toDateString();
+        
+        let d = new Date(viewDate);
+        d.setDate(d.getDate() - d.getDay()); 
+        
+        label.textContent = d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+
+        for (let i = 0; i < 7; i++) {
+            const isToday = d.toDateString() === realToday;
+            const iso = d.toISOString().split('T')[0];
+            const dateNum = d.getDate();
+            const dayName = days[i];
+
+            const wrap = document.createElement('div');
+            wrap.className = 'day' + (isToday ? ' today' : ' collapsed');
+
+            const head = document.createElement('div');
+            head.className = 'header';
+
+            let title = `${dayName} ${dateNum}`;
+            if (isToday) title = `${title} today`;
+            head.textContent = title;
+
+            const input = document.createElement('textarea');
+            input.value = localStorage.getItem(iso) || '';
+            input.placeholder = '>';
+            input.addEventListener('input', e => localStorage.setItem(iso, e.target.value));
+
+            head.onclick = () => wrap.classList.toggle('collapsed');
+
+            wrap.appendChild(head);
+            wrap.appendChild(input);
+            grid.appendChild(wrap);
+
+            d.setDate(d.getDate() + 1);
+        }
+    }
+
+    document.getElementById('prev').onclick = () => {
+        viewDate.setDate(viewDate.getDate() - 7);
+        render();
+    };
+    
+    document.getElementById('next').onclick = () => {
+        viewDate.setDate(viewDate.getDate() + 7);
+        render();
+    };
+
+    render();
+</script>
+
+</body>
+</html>
