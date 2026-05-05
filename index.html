@@ -9,83 +9,25 @@
 <title>Week Tracker</title>
 <style>
     body {
-        font-family: 'MV Boli', cursive, system-ui, -apple-system, sans-serif;
+        font-family: 'MV Boli', cursive;
         margin: 0;
         padding: 12px;
-        background: #121212;
-        color: #e0e0e0;
+        background: #000;
+        color: #fff;
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
         line-height: 1.4;
-        overflow-x: hidden;
     }
-    .view-container {
-        transition: transform 0.3s ease-out;
-        height: 100vh;
-    }
-    .week-view {
-        height: 100vh;
-        padding-bottom: 40px;
-    }
-    .month-view {
-        height: 100vh;
-        display: none;
-        flex-direction: column;
-        justify-content: center;
+    header {
+        display: flex;
+        justify-content: space-between;
         align-items: center;
-        text-align: center;
-        position: relative;
+        margin-bottom: 24px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #333;
     }
-    .month-view.active {
-        display: flex;
-    }
-    .month-label-overlay {
-        position: fixed;
-        top: 20px;
-        left: 0;
-        right: 0;
-        text-align: center;
-        font-size: 24px;
-        font-weight: 600;
-        opacity: 0;
-        transition: opacity 0.3s;
-        pointer-events: none;
-        z-index: 10;
-    }
-    .month-label-overlay.visible {
-        opacity: 1;
-    }
-    .calendar-grid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 8px;
-        margin-bottom: 40px;
-    }
-    .cal-day {
-        width: 35px;
-        height: 35px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-    }
-    .cal-header {
-        font-weight: bold;
-        color: #888;
-    }
-    .back-btn {
-        position: absolute;
-        bottom: 30px;
-        left: 0;
-        right: 0;
-        display: flex;
-        justify-content: center;
-        cursor: pointer;
-        font-size: 30px;
-        user-select: none;
-    }
-
     button {
         padding: 12px 24px;
-        background: #121212;
+        background: #000;
         color: #fff;
         border: none;
         border-radius: 8px;
@@ -93,27 +35,32 @@
         touch-action: manipulation;
     }
     button:active { background: #444; }
+    button:focus { outline: none; }
     h2 { margin: 0; font-size: 18px; font-weight: 500; }
     .day {
-        margin-bottom: 20px;
+        margin-bottom: 12px;
         display: flex;
         flex-direction: column;
     }
     .day.collapsed textarea {
         display: none;
     }
-    .header {
-        font-size: 20px;
+        .header {
+        font-size: clamp(20px, 5vh, 108px);
         font-weight: 600;
-        margin-bottom: 6px;
-        color: #888;
+        margin-bottom: 4px;
+        color: #fff;
         cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
     }
-    .today .header { color: #0a84ff; }
+    .today .header {
+        color: #39FF14;
+        text-shadow: 0 0 10px #39FF14, 0 0 20px rgba(57, 255, 20, 0.5);
+    }
     textarea {
         width: 100%;
         box-sizing: border-box;
-        background: #121212;
+        background: #000;
         color: #fff;
         border: none;
         border-radius: 8px;
@@ -123,54 +70,78 @@
         font-size: 16px;
         resize: vertical;
         -webkit-appearance: none;
+        outline: none;
     }
     textarea:focus {
         outline: none;
     }
-    header button {
-        display: none;
+    textarea:active {
+        outline: none;
+    }
+
+    @keyframes slideLeft {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes slideRight {
+        from { transform: translateX(-100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    .animate-left {
+        animation: slideLeft 0.3s ease-out;
+    }
+
+    .animate-right {
+        animation: slideRight 0.3s ease-out;
     }
 </style>
 </head>
-<body style="overflow: hidden;">
+<body>
 
-<div id="month-overlay" class="month-label-overlay"></div>
 
-<div id="main-container" class="view-container">
-    <div id="week-view" class="week-view">
-        <main id="week-grid"></main>
-    </div>
-    <div id="month-view" class="month-view">
-        <div id="month-title" style="font-size: 24px; margin-bottom: 20px;"></div>
-        <div id="calendar-grid" class="calendar-grid"></div>
-        <div id="back-to-week" class="back-btn">↑</div>
-    </div>
-</div>
+<main id="week-grid"></main>
 
 <script>
     const grid = document.getElementById('week-grid');
-    const label = document.getElementById('month-label'); // This existed, but let's update references
-    const overlay = document.getElementById('month-overlay');
-    const container = document.getElementById('main-container');
-    const monthView = document.getElementById('month-view');
-    const weekView = document.getElementById('week-view');
-    const monthTitle = document.getElementById('month-title');
-    const calGrid = document.getElementById('calendar-grid');
-
     let viewDate = new Date();
-    let scrollY = 0;
+
+    // Swipe functionality
+    let currentDirection = null;
+
+    function handleGesture() {
+        if (touchendX < touchstartX - 50) {
+            // Swipe left -> Next week
+            viewDate.setDate(viewDate.getDate() + 7);
+            currentDirection = 'left';
+            render();
+        }
+        if (touchendX > touchstartX + 50) {
+            // Swipe right -> Previous week
+            viewDate.setDate(viewDate.getDate() - 7);
+            currentDirection = 'right';
+            render();
+        }
+    }
+
+    document.addEventListener('touchstart', e => {
+        touchstartX = e.changedTouches[0].screenX;
+    });
+
+    document.addEventListener('touchend', e => {
+        touchendX = e.changedTouches[0].screenX;
+        handleGesture();
+    });
 
     const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
-    function renderWeek() {
+    function render() {
         grid.innerHTML = '';
         const realToday = new Date().toDateString();
 
         let d = new Date(viewDate);
         d.setDate(d.getDate() - d.getDay());
-
-        // Label is now handled by overlay context for swipe, but we set it for logic
-        const dateStr = d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
 
         for (let i = 0; i < 7; i++) {
             const isToday = d.toDateString() === realToday;
@@ -180,6 +151,8 @@
 
             const wrap = document.createElement('div');
             wrap.className = 'day' + (isToday ? ' today' : ' collapsed');
+            if (currentDirection === 'left') wrap.classList.add('animate-left');
+            if (currentDirection === 'right') wrap.classList.add('animate-right');
 
             const head = document.createElement('div');
             head.className = 'header';
@@ -218,82 +191,12 @@
 
             d.setDate(d.getDate() + 1);
         }
+        currentDirection = null;
     }
 
-    function renderMonthCalendar() {
-        calGrid.innerHTML = '';
-        const d = new Date(viewDate);
-        const month = d.getMonth();
-        const year = d.getFullYear();
+    // Navigation handlers removed
 
-        monthTitle.textContent = d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-        // Day headers
-        days.forEach(day => {
-            const h = document.createElement('div');
-            h.className = 'cal-day cal-header';
-            h.textContent = day.charAt(0).toUpperCase();
-            calGrid.appendChild(h);
-        });
-
-        // Padding
-        for (let i = 0; i < firstDay; i++) {
-            calGrid.appendChild(document.createElement('div'));
-        }
-
-        // Days
-        for (let i = 1; i <= daysInMonth; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'cal-day';
-            cell.textContent = i;
-            calGrid.appendChild(cell);
-        }
-    }
-
-    // Swipe logic
-    let touchStartY = 0;
-    window.addEventListener('touchstart', e => {
-        touchStartY = e.touches[0].clientY;
-    });
-
-    window.addEventListener('touchmove', e => {
-        const touchEndY = e.touches[0].clientY;
-        const diff = touchStartY - touchEndY;
-
-        if (diff > 0) { // Swiping up
-            if (monthView.classList.contains('active')) {
-                monthView.classList.remove('active');
-                overlay.classList.remove('visible');
-            }
-        } else { // Swiping down
-            const scroll = window.scrollY;
-            if (scroll > 100 && scroll < 400) {
-                overlay.textContent = viewDate.toLocaleString('en-US', { month: 'short', year: 'numeric' });
-                overlay.classList.add('visible');
-            } else if (scroll >= 400) {
-                monthView.classList.add('active');
-                renderMonthCalendar();
-            }
-        }
-    }, { passive: true });
-
-    document.getElementById('back-to-week').onclick = () => {
-        monthView.classList.remove('active');
-        overlay.classList.remove('visible');
-        window.scrollTo(0, 0);
-    };
-
-    // To allow "swiping down far enough", we need a ghost element or just allow scrolling
-    // Letting the page have scrollable height for the logic to trigger
-    document.body.style.overflowY = 'auto';
-    const spacer = document.createElement('div');
-    spacer.style.height = '1000px';
-    document.body.appendChild(spacer);
-
-    renderWeek();
+    render();
 </script>
 
 </body>
