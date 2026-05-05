@@ -117,6 +117,7 @@
     let currentDirection = null;
     let touchStartX = 0;
     let touchEndX = 0;
+    const openOrder = [];
 
     function handleGesture() {
         if (touchEndX< touchStartX - 50) {
@@ -166,10 +167,10 @@
     });
 
     const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-// ... existing code below ...
 
     function render() {
         grid.innerHTML = '';
+        openOrder.length = 0;
         const realToday = new Date().toDateString();
 
         let d = new Date(viewDate);
@@ -183,6 +184,7 @@
 
             const wrap = document.createElement('div');
             wrap.className = 'day' + (isToday ? ' today' : ' collapsed');
+            if (isToday) openOrder.push(wrap);
             if (currentDirection === 'left') wrap.classList.add('animate-left');
             if (currentDirection === 'right') wrap.classList.add('animate-right');
 
@@ -215,7 +217,20 @@
             input.placeholder = '>';
             input.addEventListener('input', e => localStorage.setItem(iso, e.target.value));
 
-            head.onclick = () => wrap.classList.toggle('collapsed');
+            head.onclick = () => {
+                const isOpening = wrap.classList.contains('collapsed');
+                wrap.classList.toggle('collapsed');
+                if (isOpening) {
+                    openOrder.push(wrap);
+                    if (openOrder.length > 2) {
+                        const oldest = openOrder.shift();
+                        oldest.classList.add('collapsed');
+                    }
+                } else {
+                    const idx = openOrder.indexOf(wrap);
+                    if (idx !== -1) openOrder.splice(idx, 1);
+                }
+            };
 
             wrap.appendChild(head);
             wrap.appendChild(input);
