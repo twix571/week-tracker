@@ -21,7 +21,6 @@
         padding: 12px;
         background: #000;
         color: #fff;
-        text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
         line-height: 1.4;
     }
     header {
@@ -38,31 +37,34 @@
         color: #fff;
         border: none;
         border-radius: 8px;
-        font-size: 18px;
+        font-size: 20px;
         touch-action: manipulation;
     }
     button:active { background: #444; }
     button:focus { outline: none; }
-    h2 { margin: 0; font-size: 18px; font-weight: 500; }
+    h2 { margin: 0; font-size: 20px; font-weight: 500; }
     .day {
         margin-bottom: 12px;
-        display: flex;
-        flex-direction: column;
     }
     .day.collapsed textarea {
         display: none;
     }
-        .header {
-        font-size: clamp(20px, 5vh, 108px);
+    .header {
+        font-size: clamp(24px, 6vh, 120px);
         font-weight: 600;
         margin-bottom: 4px;
         color: #fff;
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        gap: 12px;
     }
     .today .header {
-        color: #39FF14;
-        text-shadow: 0 0 10px #39FF14, 0 0 20px rgba(57, 255, 20, 0.5);
+        color: #fff;
+        text-shadow:
+            -1px  1px 0 #FF00FF;
     }
     textarea {
         width: 100%;
@@ -74,10 +76,15 @@
         padding: 12px;
         min-height: 80px;
         font-family: inherit;
-        font-size: 16px;
-        resize: vertical;
+        font-size: 18px;
+        resize: none;
         -webkit-appearance: none;
         outline: none;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    textarea::-webkit-scrollbar {
+        display: none;
     }
     textarea:focus {
         outline: none;
@@ -103,10 +110,14 @@
     .animate-right {
         animation: slideRight 0.3s ease-out;
     }
+
+    main {
+        max-width: 600px;
+        margin: 24px auto;
+    }
 </style>
 </head>
 <body>
-
 
 <main id="week-grid"></main>
 
@@ -120,21 +131,18 @@
     const openOrder = [];
 
     function handleGesture() {
-        if (touchEndX< touchStartX - 50) {
-            // Swipe left -> Next week
+        if (touchEndX < touchStartX - 50) {
             viewDate.setDate(viewDate.getDate() + 7);
             currentDirection = 'left';
             render();
         }
         if (touchEndX > touchStartX + 50) {
-            // Swipe right -> Previous week
             viewDate.setDate(viewDate.getDate() - 7);
             currentDirection = 'right';
             render();
         }
     }
 
-// ... existing code above ...
     let tapCount = 0;
     let lastTapTime = 0;
 
@@ -143,30 +151,34 @@
         const currentTime = Date.now();
         const tapGap = currentTime - lastTapTime;
 
-        if (tapGap< 300) {
-                tapCount++;
-            } else {
-                tapCount = 1;
-            }
+        if (tapGap < 300) {
+            tapCount++;
+        } else {
+            tapCount = 1;
+        }
 
-            lastTapTime = currentTime;
+        lastTapTime = currentTime;
 
-            if (tapCount === 3) {
-                window.location.reload();
-                tapCount = 0;
-                return;
-            }
-        });
+        if (tapCount === 3) {
+            window.location.reload();
+            tapCount = 0;
+            return;
+        }
+    });
 
     document.addEventListener('touchend', e => {
         touchEndX = e.changedTouches[0].screenX;
-        // Only trigger swipe if the finger actually moved (skip taps)
         if (Math.abs(touchEndX - touchStartX) > 50) {
             handleGesture();
         }
     });
 
     const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+    function autoResizeTextarea(el) {
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+    }
 
     function render() {
         grid.innerHTML = '';
@@ -195,47 +207,53 @@
             daySpan.textContent = dayName.charAt(0).toUpperCase() + dayName.slice(1);
 
             const dateSpan = document.createElement('span');
-            dateSpan.textContent = ` ${dateNum}`;
-            dateSpan.style.fontSize = '16px';
+            dateSpan.textContent = dateNum;
+            dateSpan.style.fontSize = '18px';
             dateSpan.style.fontWeight = '400';
+
+            head.appendChild(daySpan);
+            head.appendChild(dateSpan);
 
             if (isToday) {
                 const todaySpan = document.createElement('span');
-                todaySpan.textContent = ' today';
-                todaySpan.style.fontSize = '14px';
+                todaySpan.textContent = 'today';
+                todaySpan.style.fontSize = '16px';
                 todaySpan.style.fontWeight = '400';
-                head.appendChild(daySpan);
-                head.appendChild(dateSpan);
                 head.appendChild(todaySpan);
-            } else {
-                head.appendChild(daySpan);
-                head.appendChild(dateSpan);
             }
 
             const input = document.createElement('textarea');
             input.value = localStorage.getItem(iso) || '';
-            input.placeholder = '>';
-            input.addEventListener('input', e => {
-                // Auto capitalize first word
-                const val = e.target.value;
-                if (val.length > 0 && /^[a-z]/.test(val)) {
-                    e.target.value = val.charAt(0).toUpperCase() + val.slice(1);
+            input.addEventListener('focus', () => {
+                if (input.value.trim() === '') {
+                    input.value = '• ';
                 }
-
-                e.target.style.height = 'auto';
-                e.target.style.height = e.target.scrollHeight + 'px';
+            });
+            input.addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const start = input.selectionStart;
+                    const end = input.selectionEnd;
+                    input.value = input.value.substring(0, start) + '\n• ' + input.value.substring(end);
+                    input.selectionStart = input.selectionEnd = start + 3;
+                    autoResizeTextarea(input);
+                }
+                if (e.key === 'Backspace' && input.value === '• ') {
+                    e.preventDefault();
+                }
+            });
+            input.addEventListener('input', e => {
+                autoResizeTextarea(e.target);
                 localStorage.setItem(iso, e.target.value);
             });
-
-            // Initial height adjustment
-            input.style.height = 'auto';
-            input.style.height = input.scrollHeight + 'px';
 
             head.onclick = () => {
                 const isOpening = wrap.classList.contains('collapsed');
                 wrap.classList.toggle('collapsed');
+                
                 if (isOpening) {
                     openOrder.push(wrap);
+                    autoResizeTextarea(input); 
                     if (openOrder.length > 2) {
                         const oldest = openOrder.shift();
                         oldest.classList.add('collapsed');
@@ -250,15 +268,17 @@
             wrap.appendChild(input);
             grid.appendChild(wrap);
 
+            if (!wrap.classList.contains('collapsed')) {
+                autoResizeTextarea(input);
+            }
+
             d.setDate(d.getDate() + 1);
         }
         currentDirection = null;
     }
 
-    // Navigation handlers removed
-
     render();
 </script>
 
 </body>
-</html>
+</html>`
