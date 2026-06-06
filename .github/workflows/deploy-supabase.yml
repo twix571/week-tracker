@@ -1,0 +1,35 @@
+name: Deploy to Supabase Storage
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Supabase CLI
+        run: npm install -g supabase
+
+      - name: Configure Supabase
+        run: |
+          supabase login --no-hangs
+          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --access-token ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Upload files
+        run: |
+          supabase storage upload static-site index.html
+          supabase storage upload static-site sw.js
+          supabase storage upload static-site mvboli.ttf
+          supabase storage upload static-site icon.png 2>/dev/null || true
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
