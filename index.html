@@ -15,12 +15,20 @@
         font-style: normal;
     }
 
+    :root {
+        --bg-color: #000000;
+        --text-color: #ffffff;
+        --accent-color: #FF00FF;
+        --card-bg: #222222;
+        --border-color: #444444;
+    }
+
     body {
         font-family: 'MV Boli', cursive;
         margin: 0;
         padding: 12px;
-        background: #000;
-        color: #fff;
+        background: var(--bg-color);
+        color: var(--text-color);
         line-height: 1.4;
     }
     header {
@@ -29,18 +37,21 @@
         align-items: center;
         margin-bottom: 24px;
         padding-bottom: 12px;
-        border-bottom: 1px solid #333;
+        border-bottom: 1px solid var(--border-color);
     }
     button {
         padding: 12px 24px;
-        background: #000;
-        color: #fff;
-        border: none;
+        background: var(--card-bg);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
         border-radius: 8px;
-        font-size: 20px;
+        font-size: 16px;
         touch-action: manipulation;
+        width: 100%;
+        margin-bottom: 16px;
+        display: none;
     }
-    button:active { background: #444; }
+    button:active { background: var(--border-color); }
     button:focus { outline: none; }
     h2 { margin: 0; font-size: 20px; font-weight: 500; }
     .day {
@@ -53,7 +64,7 @@
         font-size: clamp(24px, 6vh, 120px);
         font-weight: 600;
         margin-bottom: 4px;
-        color: #fff;
+        color: var(--text-color);
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
         display: flex;
@@ -62,15 +73,14 @@
         gap: 12px;
     }
     .today .header {
-        color: #fff;
-        text-shadow:
-            -1px  1px 0 #FF00FF;
+        color: var(--text-color);
+        text-shadow: -1px 1px 0 var(--accent-color);
     }
     textarea {
         width: 100%;
         box-sizing: border-box;
-        background: #000;
-        color: #fff;
+        background: var(--bg-color);
+        color: var(--text-color);
         border: none;
         border-radius: 8px;
         padding: 12px;
@@ -86,10 +96,7 @@
     textarea::-webkit-scrollbar {
         display: none;
     }
-    textarea:focus {
-        outline: none;
-    }
-    textarea:active {
+    textarea:focus, textarea:active {
         outline: none;
     }
 
@@ -103,32 +110,251 @@
         to { transform: translateX(0); opacity: 1; }
     }
 
-    .animate-left {
-        animation: slideLeft 0.3s ease-out;
-    }
-
-    .animate-right {
-        animation: slideRight 0.3s ease-out;
-    }
+    .animate-left { animation: slideLeft 0.3s ease-out; }
+    .animate-right { animation: slideRight 0.3s ease-out; }
 
     main {
         max-width: 600px;
         margin: 24px auto;
     }
+
+    /* Modal Layout */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.85);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+    .modal-content {
+        background: #111;
+        color: #fff;
+        border: 1px solid #333;
+        padding: 24px;
+        border-radius: 12px;
+        width: 100%;
+        max-width: 400px;
+        font-family: inherit;
+    }
+    .modal-header {
+        font-size: 24px;
+        margin-bottom: 20px;
+        text-align: center;
+        border-bottom: 1px solid #333;
+        padding-bottom: 10px;
+    }
+    .setting-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+    .setting-row label {
+        font-size: 16px;
+    }
+    .setting-row input[type="color"] {
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        cursor: pointer;
+        background: none;
+    }
+    .setting-row select, .setting-row input[type="time"] {
+        background: #222;
+        color: #fff;
+        border: 1px solid #444;
+        padding: 6px;
+        border-radius: 4px;
+        font-family: inherit;
+    }
+    .modal-close-btn {
+        margin-top: 20px;
+        display: block !important;
+    }
 </style>
 </head>
 <body>
 
-<main id="week-grid"></main>
+<main>
+    <button id="noti-btn">Enable Notifications</button>
+    <div id="week-grid"></div>
+</main>
+
+<!-- Settings Modal Overlay -->
+<div id="settings-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">Settings</div>
+        
+        <!-- Color Configurations -->
+        <div class="setting-row">
+            <label>Background Color</label>
+            <input type="color" id="cfg-bg" value="#000000">
+        </div>
+        <div class="setting-row">
+            <label>Text Color</label>
+            <input type="color" id="cfg-text" value="#ffffff">
+        </div>
+        <div class="setting-row">
+            <label>Accent (Today Glow)</label>
+            <input type="color" id="cfg-accent" value="#FF00FF">
+        </div>
+        <div class="setting-row">
+            <label>Card Background</label>
+            <input type="color" id="cfg-card" value="#222222">
+        </div>
+        <div class="setting-row">
+            <label>Border Color</label>
+            <input type="color" id="cfg-border" value="#444444">
+        </div>
+		<div class="setting-row">
+			<label>Test Push</label>
+			<button id="test-noti-btn" style="display: block; width: auto; margin: 0; padding: 6px 12px;">Test Now</button>
+		</div>
+
+        <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+
+        <!-- Notification Preferences -->
+        <div class="setting-row">
+            <label>Daily Reminder</label>
+            <select id="cfg-noti-toggle">
+                <option value="off">Disabled</option>
+                <option value="on">Enabled</option>
+            </select>
+        </div>
+        <div class="setting-row">
+            <label>Reminder Time</label>
+            <input type="time" id="cfg-noti-time" value="20:00">
+        </div>
+
+        <button id="close-modal-btn" class="modal-close-btn">Save & Close</button>
+    </div>
+</div>
 
 <script>
     const grid = document.getElementById('week-grid');
+    const notiBtn = document.getElementById('noti-btn');
+    const modal = document.getElementById('settings-modal');
+    const closeModalBtn = document.getElementById('close-modal-btn');
     let viewDate = new Date();
 
     let currentDirection = null;
     let touchStartX = 0;
     let touchEndX = 0;
     const openOrder = [];
+
+    // System Color State & Defs
+    const colorKeys = {
+        '--bg-color': 'cfg-bg',
+        '--text-color': 'cfg-text',
+        '--accent-color': 'cfg-accent',
+        '--card-bg': 'cfg-card',
+        '--border-color': 'cfg-border'
+    };
+
+    function loadSettings() {
+        // Load UI Colors
+        Object.keys(colorKeys).forEach(cssVar => {
+            const savedColor = localStorage.getItem(cssVar);
+            if (savedColor) {
+                document.documentElement.style.setProperty(cssVar, savedColor);
+                document.getElementById(colorKeys[cssVar]).value = savedColor;
+            }
+        });
+
+        // Load Notification Options
+        const notiStatus = localStorage.getItem('noti-enabled') || 'off';
+        const notiTime = localStorage.getItem('noti-time') || '20:00';
+        document.getElementById('cfg-noti-toggle').value = notiStatus;
+        document.getElementById('cfg-noti-time').value = notiTime;
+    }
+
+    function saveSettings() {
+        // Save Colors
+        Object.keys(colorKeys).forEach(cssVar => {
+            const val = document.getElementById(colorKeys[cssVar]).value;
+            document.documentElement.style.setProperty(cssVar, val);
+            localStorage.setItem(cssVar, val);
+        });
+
+        // Save Notifications Configuration
+        const status = document.getElementById('cfg-noti-toggle').value;
+        const time = document.getElementById('cfg-noti-time').value;
+        localStorage.setItem('noti-enabled', status);
+        localStorage.setItem('noti-time', time);
+
+        syncNotificationSchedule();
+    }
+
+    function syncNotificationSchedule() {
+        const enabled = localStorage.getItem('noti-enabled') === 'on';
+        const time = localStorage.getItem('noti-time') || '20:00';
+
+        if (enabled && 'serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(reg => {
+                if (Notification.permission === 'granted') {
+                    // Send schedule values downstream to background scope worker context via messaging
+                    if(reg.active) {
+                        reg.active.postMessage({
+                            type: 'SET_SCHEDULE',
+                            enabled: true,
+                            time: time
+                        });
+                    }
+                } else {
+                    Notification.requestPermission();
+                }
+            });
+        } else if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(reg => {
+                if(reg.active) {
+                    reg.active.postMessage({ type: 'SET_SCHEDULE', enabled: false });
+                }
+            });
+        }
+    }
+
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+            .then(reg => {
+                console.log('SW registered');
+                checkNotificationPermission();
+                syncNotificationSchedule();
+            }).catch(err => console.log('SW error', err));
+        });
+    }
+
+    function checkNotificationPermission() {
+        if ('Notification' in window && Notification.permission === 'default') {
+            if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+                notiBtn.style.display = 'block';
+            }
+        }
+    }
+
+    notiBtn.addEventListener('click', () => {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                notiBtn.style.display = 'none';
+                syncNotificationSchedule();
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification('Notifications Enabled', {
+                        body: 'Custom alert parameters loaded.',
+                        icon: 'icon.png'
+                    });
+                });
+            }
+        });
+    });
 
     function handleGesture() {
         if (touchEndX < touchStartX - 50) {
@@ -147,6 +373,9 @@
     let lastTapTime = 0;
 
     document.addEventListener('touchstart', e => {
+        // Stop gesture collision tracking if working inside modal panel container
+        if (modal.style.display === 'flex' || e.target.closest('#settings-modal')) return;
+
         touchStartX = e.changedTouches[0].screenX;
         const currentTime = Date.now();
         const tapGap = currentTime - lastTapTime;
@@ -160,17 +389,23 @@
         lastTapTime = currentTime;
 
         if (tapCount === 3) {
-            window.location.reload();
+            modal.style.display = 'flex';
             tapCount = 0;
             return;
         }
     });
 
     document.addEventListener('touchend', e => {
+        if (modal.style.display === 'flex' || e.target.closest('#settings-modal')) return;
         touchEndX = e.changedTouches[0].screenX;
         if (Math.abs(touchEndX - touchStartX) > 50) {
             handleGesture();
         }
+    });
+
+    closeModalBtn.addEventListener('click', () => {
+        saveSettings();
+        modal.style.display = 'none';
     });
 
     const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -277,8 +512,9 @@
         currentDirection = null;
     }
 
+    loadSettings();
     render();
 </script>
 
 </body>
-</html>`
+</html>
