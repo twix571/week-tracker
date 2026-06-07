@@ -335,9 +335,7 @@
 
     function checkNotificationPermission() {
         if ('Notification' in window && Notification.permission === 'default') {
-            if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
-                notiBtn.style.display = 'block';
-            }
+            notiBtn.style.display = 'block';
         }
     }
 
