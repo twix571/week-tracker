@@ -73,6 +73,9 @@
         justify-content: center;
         gap: 12px;
     }
+    .day-name {
+        font-size: 16px;
+    }
     .today .header {
         color: var(--text-color);
         text-shadow: -1px 1px 0 var(--accent-color);
@@ -463,6 +466,7 @@
 
             const daySpan = document.createElement('span');
             daySpan.textContent = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+            if (!isToday) daySpan.classList.add('day-name');
 
             const dateSpan = document.createElement('span');
             dateSpan.textContent = dateNum;
